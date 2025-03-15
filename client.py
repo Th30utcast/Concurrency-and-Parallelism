@@ -41,7 +41,7 @@ class ChatClient:
         ttk.Button(self.login_frame, text="Login", command=self.login).grid(row=2, column=0, columnspan=2)
         ttk.Button(self.login_frame, text="Register", command=self.register).grid(row=3, column=0, columnspan=2)
         
-        # Chat frame (initially hidden)
+        # Chat frame
         self.chat_frame = ttk.Frame(self.root, padding="10")
         
         self.messages_text = tk.Text(self.chat_frame, height=20, width=50)
@@ -91,6 +91,7 @@ class ChatClient:
         
         except Exception as e:
             messagebox.showerror("Error", f"Registration failed: {e}")
+            #! Excpetioon handling
             # Create a new socket in case of failure
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 
@@ -122,6 +123,7 @@ class ChatClient:
                 self.is_connected = True
                 self.login_frame.grid_remove()
                 self.chat_frame.grid(row=0, column=0)
+                #! Multi-threading
                 # Use the thread pool to handle receiving messages
                 self.receiver_future = self.thread_pool.submit(self.receive_messages)
             elif response['status'] == 'waiting':
@@ -130,6 +132,7 @@ class ChatClient:
                     f"Server is full. You are position {response['position']} "
                     f"in queue. Estimated wait: {response['estimated_wait']} minutes")
             else:
+                #! Error handling
                 messagebox.showerror("Error", "Authentication failed")
                 
         except Exception as e:
@@ -185,8 +188,7 @@ class ChatClient:
                 data = json.loads(self.security.decrypt_data(encrypted_data))
                 
                 print(f"Received message: {data}")
-                
-                # Use tkinter's after method to safely update the UI from a non-main thread
+                #! Use tkinter's after method to safely update the UI from a non-main thread
                 self.root.after(0, self.update_messages_text, data)
                 
             except ConnectionAbortedError:
@@ -200,11 +202,11 @@ class ChatClient:
         
         print("Stopped receiving messages")
         self.socket.close()
+        #! Exception handling
         # Don't quit the root directly from a non-main thread
         self.root.after(0, self.handle_disconnection)
     
     def update_messages_text(self, data):
-        """Safely update the messages text widget from the main thread"""
         if data['type'] == 'message':
             self.messages_text.insert(tk.END,
                 f"[{data['timestamp']}] {data['sender']}: {data['content']}\n")
@@ -213,7 +215,7 @@ class ChatClient:
                     json.dumps({"notifications": self.notification_var.get()}))
     
     def handle_disconnection(self):
-        """Handle disconnection in the main thread"""
+        # Handle disconnection in the main thread
         if self.is_connected == False:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             messagebox.showinfo("Disconnected", "You have been disconnected from the server")
@@ -227,7 +229,6 @@ class ChatClient:
     def on_close(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.is_connected = False
-            
             # Only attempt to send disconnect if connected
             try:
                 if self.socket.fileno() != -1:  # Check if socket is still valid
@@ -236,18 +237,14 @@ class ChatClient:
                         "type": "disconnect"
                     }
                     self.socket.send(self.security.encrypt_data(json.dumps(disconnect_message)))
-                    
                     # Close the socket connection
                     self.socket.close()
             except:
                 pass
-                
             # Shutdown thread pool
             self.thread_pool.shutdown(wait=False)
-            
             # Destroy the GUI window and exit the program
             self.root.destroy()
-            
 if __name__ == "__main__":
     client = ChatClient()
     client.run()
