@@ -67,8 +67,9 @@ class ChatServer:
                 
                 #! Semaphore, Acquire a connection slot
                 if not self.connection_manager.acquire_connection():
-                    position, wait_time = self.connection_manager.add_to_waiting_queue(
-                        client_socket, client_address)
+                    
+                    #! Add client to waiting queue
+                    position, wait_time = self.connection_manager.add_to_waiting_queue(client_socket, client_address)
                     client_socket.send(self.security.encrypt_data(
                         json.dumps({
                             "status": "waiting",

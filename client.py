@@ -94,7 +94,6 @@ class ChatClient:
             #! Excpetioon handling
             # Create a new socket in case of failure
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                
     def login(self):
         try:
             # Create a new socket connection for each login attempt
@@ -123,9 +122,11 @@ class ChatClient:
                 self.is_connected = True
                 self.login_frame.grid_remove()
                 self.chat_frame.grid(row=0, column=0)
+
                 #! Multi-threading
                 # Use the thread pool to handle receiving messages
                 self.receiver_future = self.thread_pool.submit(self.receive_messages)
+
             elif response['status'] == 'waiting':
                 messagebox.showinfo(
                     "Waiting",
@@ -188,7 +189,6 @@ class ChatClient:
                 data = json.loads(self.security.decrypt_data(encrypted_data))
                 
                 print(f"Received message: {data}")
-                #! Use tkinter's after method to safely update the UI from a non-main thread
                 self.root.after(0, self.update_messages_text, data)
                 
             except ConnectionAbortedError:
